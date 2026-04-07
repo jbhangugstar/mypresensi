@@ -1,74 +1,53 @@
-// To parse this JSON data, do
-//
-//     final loginModel = loginModelFromJson(jsonString);
+class User {
+  final int id;
+  final String name;
+  final String email;
+  final String? emailVerifiedAt;
+  final String createdAt;
+  final String updatedAt;
 
-import 'dart:convert';
+  User({
+    required this.id,
+    required this.name,
+    required this.email,
+    this.emailVerifiedAt,
+    required this.createdAt,
+    required this.updatedAt,
+  });
 
-LoginModel loginModelFromJson(String str) =>
-    LoginModel.fromJson(json.decode(str));
-
-String loginModelToJson(LoginModel data) => json.encode(data.toJson());
-
-class LoginModel {
-  String? message;
-  LoginData? data;
-
-  LoginModel({this.message, this.data});
-
-  factory LoginModel.fromJson(Map<String, dynamic> json) => LoginModel(
-    message: json["message"],
-    data: json["data"] == null ? null : LoginData.fromJson(json["data"]),
-  );
-
-  Map<String, dynamic> toJson() => {"message": message, "data": data?.toJson()};
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      id: json['id'],
+      name: json['name'],
+      email: json['email'],
+      emailVerifiedAt: json['email_verified_at'],
+      createdAt: json['created_at'],
+      updatedAt: json['updated_at'],
+    );
+  }
 }
 
 class LoginData {
-  String? token;
-  User? user;
+  final String token;
+  final User user;
 
-  LoginData({this.token, this.user});
+  LoginData({required this.token, required this.user});
 
-  factory LoginData.fromJson(Map<String, dynamic> json) => LoginData(
-    token: json["token"],
-    user: json["user"] == null ? null : User.fromJson(json["user"]),
-  );
-
-  Map<String, dynamic> toJson() => {"token": token, "user": user?.toJson()};
+  factory LoginData.fromJson(Map<String, dynamic> json) {
+    return LoginData(token: json['token'], user: User.fromJson(json['user']));
+  }
 }
 
-class User {
-  int? id;
-  String? name;
-  String? email;
-  dynamic emailVerifiedAt;
-  String? createdAt;
-  String? updatedAt;
+class LoginResponse {
+  final String message;
+  final LoginData data;
 
-  User({
-    this.id,
-    this.name,
-    this.email,
-    this.emailVerifiedAt,
-    this.createdAt,
-    this.updatedAt,
-  });
+  LoginResponse({required this.message, required this.data});
 
-  factory User.fromJson(Map<String, dynamic> json) => User(
-    id: json["id"],
-    name: json["name"],
-    email: json["email"],
-    emailVerifiedAt: json["email_verified_at"],
-    createdAt: json["created_at"],
-    updatedAt: json["updated_at"],
-  );
-
-  Map<String, dynamic> toJson() => {
-    "id": id,
-    "name": name,
-    "email": email,
-    "email_verified_at": emailVerifiedAt,
-    "created_at": createdAt,
-    "updated_at": updatedAt,
-  };
+  factory LoginResponse.fromJson(Map<String, dynamic> json) {
+    return LoginResponse(
+      message: json['message'],
+      data: LoginData.fromJson(json['data']),
+    );
+  }
 }

@@ -1,35 +1,53 @@
 import 'dart:convert';
-import 'dart:developer';
-
 import 'package:http/http.dart' as http;
-import 'package:mypresensi/api/endpoint.dart';
-import 'package:mypresensi/api/token_helper.dart';
-import 'package:mypresensi/model/login_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../model/login_model.dart';
+import 'endpoint.dart';
 
-Future<LoginModel?> loginUser({
-  required String email,
-  required String password,
-}) async {
-  final response = await http.post(
-    Uri.parse(Endpoint.login),
-    headers: {"Accept": "application/json"},
-    body: {"email": email, "password": password},
-  );
+class LoginUser {
+  static const String tokenKey = 'auth_token';
 
-  log(response.body);
+  // fungsi login
+  static Future<LoginResponse?> login({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse(Endpoint.login),
+        headers: {"Accept": "application/json"},
+        body: {"email": email, "password": password},
+      );
 
-  if (response.statusCode == 200) {
-    final result = LoginModel.fromJson(json.decode(response.body));
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
 
-    if (result.data != null) {
-      await saveToken(result.data!.token!);
+        final data = LoginResponse.fromJson(jsonData);
+
+        // simpan token
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(tokenKey, data.data.token);
+
+        return data;
+      } else {
+        print("Login gagal: ${response.body}");
+        return null;
+      }
+    } catch (e) {
+      print("Error login: $e");
+      return null;
     }
+  }
 
-    return result;
-  } else {
-    final error = LoginModel.fromJson(json.decode(response.body));
-    log(error.toString());
+  // ambil token
+  static Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(tokenKey);
+  }
 
-    throw Exception(error.message ?? "Login gagal");
+  // logout
+  static Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(tokenKey);
   }
 }

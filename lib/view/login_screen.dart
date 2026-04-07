@@ -1,8 +1,7 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
-import '../api/auth_service.dart';
-import 'register_screen.dart';
+import 'package:mypresensi/view/dashboard_screen.dart';
+import 'package:mypresensi/view/register_screen.dart';
+import '../api/login_user.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,213 +11,227 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController passwordController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
-  bool isVisibility = false;
   bool isLoading = false;
+  bool isPasswordHidden = true;
 
-  void visibilityOnOff() {
-    setState(() {
-      isVisibility = !isVisibility;
-    });
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
   }
 
-  Future<void> loginUser() async {
-    if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+  Future<void> handleLogin() async {
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email dan password wajib diisi')),
+        const SnackBar(content: Text("Email & Password wajib diisi")),
       );
       return;
     }
 
-    setState(() {
-      isLoading = true;
-    });
-
-    try {
-      final result = await AuthService.login(
-        email: emailController.text,
-        password: passwordController.text,
-      );
-      log(result?.message ?? "");
-      if (!mounted) return;
-
-      if (result != null && result.data?.token != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result.message ?? 'Login berhasil')),
-        );
-
-        Navigator.pushReplacementNamed(context, '/profile');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Email atau password salah')),
-        );
-      }
-    } catch (e) {
+    if (!email.contains("@")) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Login gagal: $e')));
+      ).showSnackBar(const SnackBar(content: Text("Format email tidak valid")));
+      return;
     }
 
-    if (!mounted) return;
-    setState(() {
-      isLoading = false;
-    });
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Password minimal 6 karakter")),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    final result = await LoginUser.login(email: email, password: password);
+
+    setState(() => isLoading = false);
+
+    if (result != null) {
+      // ✅ berhasil → pindah ke dashboard
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const DashboardScreen()),
+      );
+    } else {
+      // ❌ gagal
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Login gagal")));
+    }
   }
 
-  @override
-  void dispose() {
-    passwordController.dispose();
-    emailController.dispose();
-    super.dispose();
+  InputDecoration inputStyle({required String hint, Widget? suffixIcon}) {
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: Colors.white,
+      suffixIcon: suffixIcon,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[300],
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
+            colors: [Colors.grey.shade900, Colors.grey.shade500],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFB23AEE),
-              Color(0xFFB23AEE),
-              Color.fromARGB(255, 179, 8, 170),
-            ],
           ),
         ),
-        child: SafeArea(
+        child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              children: [
-                const SizedBox(height: 30),
-                Image.asset("assets/images/logo.jpeg", height: 250),
-                const Text(
-                  "Your Dreams Matter",
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 30),
-
-                TextFormField(
-                  controller: emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    hintText: "Masukkan Email",
-                    labelText: "Email",
-                    prefixIcon: const Icon(Icons.email),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide.none,
+            padding: const EdgeInsets.all(20),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.75),
+                borderRadius: BorderRadius.circular(25),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    "Welcome Back",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-
-                const SizedBox(height: 16),
-
-                TextFormField(
-                  controller: passwordController,
-                  obscureText: !isVisibility,
-                  decoration: InputDecoration(
-                    hintText: "Masukkan Password",
-                    labelText: "Password",
-                    prefixIcon: const Icon(Icons.key),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        isVisibility ? Icons.visibility : Icons.visibility_off,
-                      ),
-                      onPressed: visibilityOnOff,
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide.none,
-                    ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    "Login To Your Account",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white70),
                   ),
-                ),
+                  const SizedBox(height: 25),
 
-                const SizedBox(height: 24),
+                  // ================= EMAIL =================
+                  TextField(
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: inputStyle(hint: "Email"),
+                  ),
+                  const SizedBox(height: 15),
 
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : loginUser,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
+                  // ================= PASSWORD =================
+                  TextField(
+                    controller: passwordController,
+                    obscureText: isPasswordHidden,
+                    decoration: inputStyle(
+                      hint: "Kata Sandi",
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          isPasswordHidden
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                          color: Colors.grey,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            isPasswordHidden = !isPasswordHidden;
+                          });
+                        },
                       ),
                     ),
-                    child: isLoading
-                        ? const SizedBox(
-                            height: 22,
-                            width: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: Colors.purple,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // ================= BUTTON LOGIN =================
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: isLoading ? null : handleLogin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2.5,
+                              ),
+                            )
+                          : const Text(
+                              "Log In",
+                              style: TextStyle(fontSize: 16),
                             ),
-                          )
-                        : const Text(
-                            "Masuk",
-                            style: TextStyle(
-                              color: Colors.purple,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  // ================= REGISTER =================
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        "Belum punya akun? ",
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => RegisterScreen(),
                             ),
+                          );
+                        },
+                        child: const Text(
+                          "Daftar",
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
                           ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
 
-                const SizedBox(height: 30),
+                  const SizedBox(height: 10),
 
-                const Text(
-                  "Belum punya akun? Daftar",
-                  style: TextStyle(color: Colors.white),
-                ),
-
-                const SizedBox(height: 8),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
+                  // ================= FORGOT PASSWORD =================
+                  TextButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const RegisterScreen(),
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Fitur lupa password belum tersedia"),
                         ),
                       );
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
                     child: const Text(
-                      "Daftar Sekarang",
-                      style: TextStyle(
-                        color: Colors.purple,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      "Lupa Kata Sandi?",
+                      style: TextStyle(color: Colors.white70),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

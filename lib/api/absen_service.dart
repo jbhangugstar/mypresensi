@@ -1,19 +1,54 @@
-import 'package:mypresensi/api/check_in.dart';
-import 'package:mypresensi/api/check_out.dart';
-import 'package:mypresensi/model/absen_model.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mypresensi/model/absen_response_model.dart';
 
 class AbsenService {
-  static Future<AbsenModel?> absenMasuk({
-    required String latitude,
-    required String longitude,
+  static const String baseUrl = "https://appabsensi.mobileprojp.com";
+
+  static Future<AbsenResponseModel> checkIn({
+    required double latitude,
+    required double longitude,
   }) async {
-    return await checkIn(latitude: latitude, longitude: longitude);
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    final url = Uri.parse('$baseUrl/api/absen/check-in');
+
+    final response = await http.post(
+      url,
+      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
+      body: {
+        'latitude': latitude.toString(),
+        'longitude': longitude.toString(),
+      },
+    );
+
+    final data = jsonDecode(response.body);
+
+    return AbsenResponseModel.fromJson(data);
   }
 
-  static Future<AbsenModel?> absenPulang({
-    required String latitude,
-    required String longitude,
+  static Future<AbsenResponseModel> checkOut({
+    required double latitude,
+    required double longitude,
   }) async {
-    return await checkOut(latitude: latitude, longitude: longitude);
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    final url = Uri.parse('$baseUrl/api/absen/check-out');
+
+    final response = await http.post(
+      url,
+      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
+      body: {
+        'latitude': latitude.toString(),
+        'longitude': longitude.toString(),
+      },
+    );
+
+    final data = jsonDecode(response.body);
+
+    return AbsenResponseModel.fromJson(data);
   }
 }

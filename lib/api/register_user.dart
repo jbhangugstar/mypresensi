@@ -1,29 +1,106 @@
 import 'dart:convert';
 import 'dart:developer';
-
 import 'package:http/http.dart' as http;
-import 'package:mypresensi/api/endpoint.dart';
-import 'package:mypresensi/model/register_user_model.dart';
 
-Future<RegisterModel?> registerUser({
-  required String name,
-  required String email,
-  required String password,
-}) async {
-  final response = await http.post(
-    Uri.parse(Endpoint.register),
-    headers: {"Accept": "application/json"},
-    body: {"name": name, "email": email, "password": password},
-  );
+import '../model/training_model.dart';
+import '../model/batch_model.dart';
+import '../model/register_model.dart';
 
-  log(response.body);
+class RegisterApi {
+  static const String baseUrl = "https://appabsensi.mobileprojp.com";
 
-  if (response.statusCode == 200) {
-    return RegisterModel.fromJson(json.decode(response.body));
-  } else {
-    final error = RegisterModel.fromJson(json.decode(response.body));
-    log(error.toString());
+  // ================= GET TRAININGS =================
+  static Future<List<TrainingModel>> getTrainings() async {
+    final url = Uri.parse('$baseUrl/api/trainings');
 
-    throw Exception(error.message ?? "Register gagal");
+    log("========== GET TRAININGS DEBUG ==========");
+    log("URL: $url");
+
+    final res = await http.get(url, headers: {"Accept": "application/json"});
+
+    log("STATUS: ${res.statusCode}");
+    log("BODY: ${res.body}");
+    log("=========================================");
+
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body);
+      final List list = data['data'];
+
+      return list.map((e) => TrainingModel.fromJson(e)).toList();
+    } else {
+      throw Exception("Gagal load trainings");
+    }
+  }
+
+  // ================= GET ALL BATCH =================
+  static Future<List<BatchModel>> getBatches() async {
+    final url = Uri.parse('$baseUrl/api/batches');
+
+    log("========== GET BATCHES DEBUG ==========");
+    log("URL: $url");
+
+    final res = await http.get(url, headers: {"Accept": "application/json"});
+
+    log("STATUS: ${res.statusCode}");
+    log("BODY: ${res.body}");
+    log("=======================================");
+
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body);
+      final List list = data['data'];
+
+      return list.map((e) => BatchModel.fromJson(e)).toList();
+    } else {
+      throw Exception("Gagal load batch");
+    }
+  }
+
+  // ================= GET BATCH BY TRAINING =================
+  static Future<List<BatchModel>> getBatchesByTraining(int trainingId) async {
+    final url = Uri.parse('$baseUrl/api/batches?training_id=$trainingId');
+
+    log("========== GET BATCH BY TRAINING DEBUG ==========");
+    log("URL: $url");
+
+    final res = await http.get(url, headers: {"Accept": "application/json"});
+
+    log("STATUS: ${res.statusCode}");
+    log("BODY: ${res.body}");
+    log("=================================================");
+
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body);
+      final List list = data['data'];
+
+      return list.map((e) => BatchModel.fromJson(e)).toList();
+    } else {
+      throw Exception("Gagal load batch by training");
+    }
+  }
+
+  // ================= POST REGISTER =================
+  static Future<bool> register(RegisterModel model) async {
+    final url = Uri.parse('$baseUrl/api/register');
+    final body = jsonEncode(model.toJson());
+
+    log("========== REGISTER API DEBUG ==========");
+    log("URL      : $url");
+    log("BODY     : $body");
+
+    final res = await http.post(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: body,
+    );
+
+    log("STATUS   : ${res.statusCode}");
+    log("BODY     : ${res.body}");
+    log("HEADERS  : ${res.headers}");
+    log("========================================");
+
+    return res.statusCode == 200 || res.statusCode == 201;
   }
 }
