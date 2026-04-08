@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:mypresensi/api/register_user.dart';
+import 'package:mypresensi/api/auth/register_user.dart';
+import 'package:mypresensi/extension/navigator.dart';
+import 'package:mypresensi/view/login_screen.dart';
 import '../model/training_model.dart';
 import '../model/batch_model.dart';
 import '../model/register_model.dart';
@@ -18,7 +20,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final emailC = TextEditingController();
   final passwordC = TextEditingController();
 
-  String selectedGender = 'L'; // ✅ API maunya L / P
+  String selectedGender = 'L';
 
   List<TrainingModel> trainings = [];
   List<BatchModel> batches = [];
@@ -47,7 +49,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  // ================= LOAD TRAINING =================
   void loadData() async {
     try {
       print("========== LOAD TRAINING DEBUG ==========");
@@ -72,7 +73,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  // ================= LOAD BATCH =================
   Future<void> loadBatch(int trainingId) async {
     setState(() {
       isLoadingBatch = true;
@@ -107,7 +107,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  // ================= SUBMIT REGISTER =================
   void submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -124,7 +123,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       name: nameC.text.trim(),
       email: emailC.text.trim(),
       password: passwordC.text.trim(),
-      gender: selectedGender, // L / P
+      gender: selectedGender,
       trainingId: selectedTraining!.id,
       batchId: selectedBatch!.id,
     );
@@ -161,6 +160,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         selectedBatch = null;
         batches = [];
       });
+
+      context.pushAndRemoveAll(LoginScreen());
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -171,15 +172,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Register"),
-        backgroundColor: Colors.grey.shade900,
-        centerTitle: true,
-      ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -204,76 +199,126 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 )
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.75),
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const Text(
-                            "Register Account",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-
-                          buildInput(nameC, "Nama"),
-                          const SizedBox(height: 12),
-
-                          buildInput(
-                            emailC,
-                            "Email",
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          const SizedBox(height: 12),
-
-                          buildInput(passwordC, "Kata Sandi", isPassword: true),
-                          const SizedBox(height: 12),
-
-                          buildDropdownGender(),
-                          const SizedBox(height: 12),
-
-                          buildDropdownTraining(),
-                          const SizedBox(height: 12),
-
-                          buildDropdownBatch(),
-                          const SizedBox(height: 24),
-
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                            onPressed: isSubmit ? null : submit,
-                            child: isSubmit
-                                ? const SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2.5,
-                                    ),
-                                  )
-                                : const Text(
-                                    "Daftar",
-                                    style: TextStyle(fontSize: 16),
-                                  ),
-                          ),
-                        ],
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // ================= LOGO =================
+                      Image.asset(
+                        "assets/images/logo _MyPresensi.png",
+                        height: 100,
+                        fit: BoxFit.contain,
                       ),
-                    ),
+                      const SizedBox(height: 0),
+
+                      // ================= BOX REGISTER =================
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.75),
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const Text(
+                                "Register Account",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+
+                              buildInput(nameC, "Nama"),
+                              const SizedBox(height: 12),
+
+                              buildInput(
+                                emailC,
+                                "Email",
+                                keyboardType: TextInputType.emailAddress,
+                              ),
+                              const SizedBox(height: 12),
+
+                              buildInput(
+                                passwordC,
+                                "Kata Sandi",
+                                isPassword: true,
+                              ),
+                              const SizedBox(height: 12),
+
+                              buildDropdownGender(),
+                              const SizedBox(height: 12),
+
+                              buildDropdownTraining(),
+                              const SizedBox(height: 12),
+
+                              buildDropdownBatch(),
+                              const SizedBox(height: 24),
+
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                ),
+                                onPressed: isSubmit ? null : submit,
+                                child: isSubmit
+                                    ? const SizedBox(
+                                        width: 22,
+                                        height: 22,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2.5,
+                                        ),
+                                      )
+                                    : const Text(
+                                        "Daftar",
+                                        style: TextStyle(fontSize: 16),
+                                      ),
+                              ),
+
+                              const SizedBox(height: 0),
+
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Text(
+                                    "Sudah punya akun? ",
+                                    style: TextStyle(color: Colors.white70),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const LoginScreen(),
+                                        ),
+                                      );
+                                    },
+                                    child: const Text(
+                                      "Login",
+                                      style: TextStyle(
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
         ),
@@ -281,7 +326,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // ================= INPUT =================
   Widget buildInput(
     TextEditingController c,
     String hint, {
@@ -332,7 +376,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // ================= DROPDOWN GENDER =================
   Widget buildDropdownGender() {
     return DropdownButtonFormField<String>(
       value: selectedGender,
@@ -349,7 +392,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // ================= DROPDOWN TRAINING =================
   Widget buildDropdownTraining() {
     return DropdownButtonFormField<TrainingModel>(
       value: selectedTraining,
@@ -377,7 +419,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // ================= DROPDOWN BATCH =================
   Widget buildDropdownBatch() {
     return DropdownButtonFormField<BatchModel>(
       value: selectedBatch,
@@ -407,7 +448,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // ================= STYLE =================
   InputDecoration inputStyle() {
     return InputDecoration(
       filled: true,

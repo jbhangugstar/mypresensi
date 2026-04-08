@@ -1,26 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 
-class MapScreen extends StatelessWidget {
-  final double latitude;
-  final double longitude;
+class AbsenMapScreen extends StatefulWidget {
+  const AbsenMapScreen({super.key});
 
-  const MapScreen({super.key, required this.latitude, required this.longitude});
+  @override
+  State<AbsenMapScreen> createState() => _AbsenMapScreenState();
+}
+
+class _AbsenMapScreenState extends State<AbsenMapScreen> {
+  LatLng? currentLatLng;
+
+  @override
+  void initState() {
+    super.initState();
+    getLocation();
+  }
+
+  void getLocation() async {
+    final pos = await Geolocator.getCurrentPosition();
+    setState(() {
+      currentLatLng = LatLng(pos.latitude, pos.longitude);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final LatLng userLocation = LatLng(latitude, longitude);
+    if (currentLatLng == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Lokasi Saya")),
+      appBar: AppBar(title: const Text("Lokasi Anda")),
       body: GoogleMap(
-        initialCameraPosition: CameraPosition(target: userLocation, zoom: 17),
+        initialCameraPosition: CameraPosition(target: currentLatLng!, zoom: 17),
         markers: {
-          Marker(
-            markerId: const MarkerId("user_location"),
-            position: userLocation,
-            infoWindow: const InfoWindow(title: "Lokasi Anda"),
-          ),
+          Marker(markerId: const MarkerId("me"), position: currentLatLng!),
         },
       ),
     );

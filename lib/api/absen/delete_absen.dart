@@ -3,10 +3,10 @@ import 'dart:developer';
 
 import 'package:http/http.dart' as http;
 import 'package:mypresensi/api/endpoint.dart';
-import 'package:mypresensi/api/token_helper.dart';
+import 'package:mypresensi/database/preference.dart';
 
 Future<bool> deleteAbsen({required int id}) async {
-  final token = await getToken();
+  final token = await PreferenceHandler.getToken();
 
   final response = await http.delete(
     Uri.parse("${Endpoint.deleteAbsen}?id=$id"),

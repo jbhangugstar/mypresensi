@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mypresensi/api/profile_user.dart';
+import 'package:mypresensi/api/auth/profile_user.dart';
 import '../model/profile_model.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -64,58 +64,135 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ================= UI =================
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Profile")),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: EdgeInsets.all(20),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.blue.shade600, Colors.blue.shade900],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: isLoading
+          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
               child: Form(
                 key: _formKey,
                 child: Column(
                   children: [
-                    // FOTO
+                    const SizedBox(height: 20),
+
+                    // ================= FOTO =================
                     CircleAvatar(
-                      radius: 50,
+                      radius: 60,
+                      backgroundColor: Colors.white.withOpacity(0.2),
                       backgroundImage: profile!.photo != null
                           ? NetworkImage(profile!.photo!)
                           : null,
                       child: profile!.photo == null
-                          ? Icon(Icons.person, size: 50)
+                          ? const Icon(
+                              Icons.person,
+                              size: 60,
+                              color: Colors.white,
+                            )
                           : null,
                     ),
 
-                    SizedBox(height: 20),
+                    const SizedBox(height: 24),
 
-                    // NAME
-                    TextFormField(
-                      controller: nameC,
-                      validator: (v) => v!.isEmpty ? "Nama wajib diisi" : null,
-                      decoration: InputDecoration(
-                        labelText: "Nama",
-                        border: OutlineInputBorder(),
+                    // ================= CARD FORM =================
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.95),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Edit Profil",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
 
-                    SizedBox(height: 15),
+                          // NAME
+                          TextFormField(
+                            controller: nameC,
+                            validator: (v) =>
+                                v!.isEmpty ? "Nama wajib diisi" : null,
+                            decoration: InputDecoration(
+                              labelText: "Nama",
+                              filled: true,
+                              fillColor: Colors.grey.shade100,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
 
-                    // EMAIL
-                    TextFormField(
-                      controller: emailC,
-                      validator: (v) => v!.isEmpty ? "Email wajib diisi" : null,
-                      decoration: InputDecoration(
-                        labelText: "Email",
-                        border: OutlineInputBorder(),
+                          const SizedBox(height: 15),
+
+                          // EMAIL
+                          TextFormField(
+                            controller: emailC,
+                            validator: (v) =>
+                                v!.isEmpty ? "Email wajib diisi" : null,
+                            decoration: InputDecoration(
+                              labelText: "Email",
+                              filled: true,
+                              fillColor: Colors.grey.shade100,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          // UPDATE BUTTON
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: isUpdate ? null : updateProfile,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue.shade600,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              child: isUpdate
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
+                                      ),
+                                    )
+                                  : const Text(
+                                      "Update Profile",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-
-                    SizedBox(height: 20),
-
-                    ElevatedButton(
-                      onPressed: isUpdate ? null : updateProfile,
-                      child: isUpdate
-                          ? CircularProgressIndicator(color: Colors.white)
-                          : Text("Update Profile"),
                     ),
                   ],
                 ),

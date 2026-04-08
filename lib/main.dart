@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:mypresensi/database/preference.dart';
-import 'package:mypresensi/view/login_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:mypresensi/database/preference.dart';
+import 'package:mypresensi/view/dashboard_screen.dart';
+import 'package:mypresensi/view/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,7 +38,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       debugShowCheckedModeBanner: false,
-      home: LoginScreen(),
+      home: const SplashScreen(),
     );
   }
 }

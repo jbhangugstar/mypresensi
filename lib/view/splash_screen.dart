@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import '../api/token_helper.dart';
+import 'package:mypresensi/database/preference.dart';
+import 'package:mypresensi/extension/navigator.dart';
+import 'package:mypresensi/view/dashboard_screen.dart';
+import 'package:mypresensi/view/login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -16,19 +19,14 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkToken() async {
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (!mounted) return;
-
-    final token = await getToken();
+    final token = await PreferenceHandler.getToken();
 
     if (mounted) {
       if (token != null && token.isNotEmpty) {
         // Token exists, go to dashboard
-        Navigator.pushReplacementNamed(context, '/dashboard');
+        context.pushAndRemoveAll(DashboardScreen());
       } else {
-        // No token, go to register
-        Navigator.pushReplacementNamed(context, '/register');
+        context.pushAndRemoveAll(LoginScreen());
       }
     }
   }

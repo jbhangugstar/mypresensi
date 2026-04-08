@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
 
-import '../model/training_model.dart';
-import '../model/batch_model.dart';
-import '../model/register_model.dart';
+import '../../model/training_model.dart';
+import '../../model/batch_model.dart';
+import '../../model/register_model.dart';
 
 class RegisterApi {
   static const String baseUrl = "https://appabsensi.mobileprojp.com";
