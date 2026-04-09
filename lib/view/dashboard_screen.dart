@@ -25,12 +25,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isLoadingProfile = true;
 
   // ================= DATE =================
-  String today = DateFormat('EEEE, dd MMM yyyy').format(DateTime.now());
+  String today = DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(DateTime.now());
 
   // ================= MAP =================
   GoogleMapController? mapController;
-  LatLng currentPosition = const LatLng(-6.200000, 106.816666);
-  String currentAddress = "Loading...";
+  // Koordinat PPKD Jakarta Pusat
+  LatLng currentPosition = const LatLng(-6.210710139945732, 106.81355394001878);
+  String currentAddress = "PPKD Jakarta Pusat";
   Marker? marker;
 
   // ================= ABSEN =================
@@ -48,6 +49,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     setGreeting();
     loadUser();
+
+    // Set marker langsung agar peta muncul di PPKD tanpa menunggu GPS
+    marker = Marker(
+      markerId: const MarkerId("me"),
+      position: currentPosition,
+      infoWindow: const InfoWindow(
+        title: "Lokasi Anda",
+        snippet: "PPKD Jakarta Pusat",
+      ),
+    );
+
     getCurrentLocation();
     fetchToday();
     fetchStats();
@@ -59,8 +71,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     greeting = hour < 12
         ? 'Selamat Pagi'
         : hour < 18
-        ? 'Selamat Siang'
-        : 'Selamat Malam';
+            ? 'Selamat Siang'
+            : 'Selamat Malam';
   }
 
   // ================= PROFILE =================
@@ -80,34 +92,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // ================= LOCATION =================
   Future<void> getCurrentLocation() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      await Geolocator.openLocationSettings();
-      return;
-    }
-
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      permission = await Geolocator.requestPermission();
-      if (permission != LocationPermission.whileInUse &&
-          permission != LocationPermission.always) {
-        return;
+    // Coba minta permission (tidak blocking jika gagal)
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        await Geolocator.openLocationSettings();
       }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        permission = await Geolocator.requestPermission();
+      }
+    } catch (_) {
+      // Abaikan error permission, tetap lanjut ke koordinat hardcode
     }
 
-    Position pos = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
+    // Koordinat PPKD Jakarta Pusat
+    currentPosition = const LatLng(-6.2108069579377805, 106.81296578881235);
 
-    currentPosition = LatLng(pos.latitude, pos.longitude);
+    String addressText = "PPKD Jakarta Pusat";
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        currentPosition.latitude,
+        currentPosition.longitude,
+      );
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        addressText =
+            "${place.name}, ${place.street}, ${place.locality}, ${place.country}";
+      }
+    } catch (_) {
+      // Fallback alamat
+    }
 
-    List<Placemark> placemarks = await placemarkFromCoordinates(
-      pos.latitude,
-      pos.longitude,
-    );
-
-    Placemark place = placemarks[0];
+    if (!mounted) return;
 
     setState(() {
       marker = Marker(
@@ -115,12 +134,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         position: currentPosition,
         infoWindow: InfoWindow(
           title: "Lokasi Anda",
-          snippet: "${place.street}, ${place.locality}",
+          snippet: addressText,
         ),
       );
 
-      currentAddress =
-          "${place.name}, ${place.street}, ${place.locality}, ${place.country}";
+      currentAddress = addressText;
 
       mapController?.animateCamera(
         CameraUpdate.newLatLngZoom(currentPosition, 16),
@@ -140,16 +158,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         status: "masuk",
       );
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Check-in berhasil")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Check-in berhasil")),
+      );
 
       fetchToday();
       fetchStats();
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Check-in gagal: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Check-in gagal: $e")),
+      );
     }
 
     setState(() => isLoadingAbsen = false);
@@ -164,19 +182,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         latitude: currentPosition.latitude,
         longitude: currentPosition.longitude,
         address: currentAddress,
-        // status: "masuk",
       );
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Check-out berhasil")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Check-out berhasil")),
+      );
 
       fetchToday();
       fetchStats();
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Check-out gagal: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Check-out gagal: $e")),
+      );
     }
 
     setState(() => isLoadingAbsen = false);
@@ -227,159 +244,284 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // ================= DASHBOARD =================
   Widget dashboardView() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.blue.shade600, Colors.blue.shade900],
-        ),
-      ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 20),
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
 
-            Text(
-              isLoadingProfile ? greeting : "$greeting, $userName 👋",
-              style: const TextStyle(
-                fontSize: 22,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(today, style: const TextStyle(color: Colors.white70)),
-
-            const SizedBox(height: 20),
-
-            // ================= MAP =================
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: SizedBox(
-                height: 200,
-                child: GoogleMap(
-                  initialCameraPosition: CameraPosition(
-                    target: currentPosition,
-                    zoom: 14,
-                  ),
-                  markers: marker != null ? {marker!} : {},
-                  myLocationEnabled: true,
-                  myLocationButtonEnabled: true,
-                  onMapCreated: (controller) {
-                    mapController = controller;
-                  },
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 10),
-            Text(currentAddress, style: const TextStyle(color: Colors.white)),
-
-            const SizedBox(height: 20),
-
-            // ================= ABSENSI =================
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
+    return Scaffold(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ================= GREETING HEADER =================
+              Row(
                 children: [
-                  const Text(
-                    "Absensi Hari Ini",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: cs.primaryContainer,
+                    child: Icon(Icons.person, color: cs.onPrimaryContainer),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Masuk: ${todayAttendance?.checkIn?.isEmpty ?? true ? '--:--' : todayAttendance!.checkIn}",
-                      ),
-                      Text(
-                        "Pulang: ${todayAttendance?.checkOut?.isEmpty ?? true ? '--:--' : todayAttendance!.checkOut}",
-                      ),
-                    ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isLoadingProfile ? greeting : "$greeting 👋",
+                          style: tt.bodyMedium?.copyWith(
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                        Text(
+                          userName,
+                          style: tt.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: cs.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 4),
+              Text(
+                today,
+                style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+              ),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // ================= BUTTON =================
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: (sudahCheckIn || isLoadingAbsen)
-                        ? null
-                        : checkIn,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                    ),
-                    child: isLoadingAbsen
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text("Check In"),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: (sudahCheckOut || isLoadingAbsen)
-                        ? null
-                        : checkOut,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                    ),
-                    child: const Text("Check Out"),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            // ================= STATS =================
-            isLoadingStats
-                ? const Center(child: CircularProgressIndicator())
-                : Row(
+              // ================= ABSENSI HARI INI =================
+              Card(
+                color: cs.primaryContainer,
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: statBox("Hadir", hadirCount, Colors.green),
+                      Text(
+                        "Absensi Hari Ini",
+                        style: tt.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: cs.onPrimaryContainer,
+                        ),
                       ),
-                      Expanded(
-                        child: statBox("Izin", izinCount, Colors.orange),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _timeChip(
+                              "Masuk",
+                              todayAttendance?.checkIn?.isEmpty ?? true
+                                  ? '--:--'
+                                  : todayAttendance!.checkIn!,
+                              Icons.login_rounded,
+                              cs.primary,
+                              cs,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _timeChip(
+                              "Pulang",
+                              todayAttendance?.checkOut?.isEmpty ?? true
+                                  ? '--:--'
+                                  : todayAttendance!.checkOut!,
+                              Icons.logout_rounded,
+                              cs.tertiary,
+                              cs,
+                            ),
+                          ),
+                        ],
                       ),
-                      Expanded(child: statBox("Absen", absenCount, Colors.red)),
                     ],
                   ),
-          ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // ================= BUTTONS =================
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: (sudahCheckIn || isLoadingAbsen) ? null : checkIn,
+                      icon: isLoadingAbsen
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.login_rounded),
+                      label: const Text("Check In"),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton.tonalIcon(
+                      onPressed: (sudahCheckOut || isLoadingAbsen) ? null : checkOut,
+                      icon: const Icon(Icons.logout_rounded),
+                      label: const Text("Check Out"),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // ================= STATS =================
+              Text(
+                "Statistik Bulan Ini",
+                style: tt.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: cs.onSurface,
+                ),
+              ),
+              const SizedBox(height: 12),
+              isLoadingStats
+                  ? const Center(child: CircularProgressIndicator())
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: _statCard(
+                            "Hadir",
+                            hadirCount,
+                            Icons.check_circle_outline,
+                            cs.primary,
+                            cs.primaryContainer,
+                            cs,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _statCard(
+                            "Izin",
+                            izinCount,
+                            Icons.event_note_outlined,
+                            cs.tertiary,
+                            cs.tertiaryContainer,
+                            cs,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _statCard(
+                            "Absen",
+                            absenCount,
+                            Icons.cancel_outlined,
+                            cs.error,
+                            cs.errorContainer,
+                            cs,
+                          ),
+                        ),
+                      ],
+                    ),
+
+              const SizedBox(height: 20),
+
+              // ================= MAP =================
+              Text(
+                "Lokasi Saat Ini",
+                style: tt.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: cs.onSurface,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                clipBehavior: Clip.antiAlias,
+                child: SizedBox(
+                  height: 200,
+                  child: GoogleMap(
+                    initialCameraPosition: CameraPosition(
+                      target: currentPosition,
+                      zoom: 14,
+                    ),
+                    markers: marker != null ? {marker!} : {},
+                    myLocationEnabled: true,
+                    myLocationButtonEnabled: true,
+                    onMapCreated: (controller) {
+                      mapController = controller;
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.location_on_outlined, size: 16, color: cs.onSurfaceVariant),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      currentAddress,
+                      style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget statBox(String title, int value, Color color) {
+  Widget _timeChip(String label, String time, IconData icon, Color iconColor, ColorScheme cs) {
     return Container(
-      margin: const EdgeInsets.all(5),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
       decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(10),
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Text(
-            value.toString(),
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+          Icon(icon, size: 20, color: iconColor),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+              Text(
+                time,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: cs.onSurface,
+                ),
+              ),
+            ],
           ),
-          Text(title, style: const TextStyle(color: Colors.white)),
         ],
+      ),
+    );
+  }
+
+  Widget _statCard(String title, int value, IconData icon, Color iconColor, Color bgColor, ColorScheme cs) {
+    return Card(
+      color: bgColor,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        child: Column(
+          children: [
+            Icon(icon, color: iconColor, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              value.toString(),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: iconColor,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              title,
+              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -387,7 +529,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // ================= NAVIGATION =================
   Widget getBody() {
     if (currentIndex == 0) return dashboardView();
-    if (currentIndex == 1) return RiwayatAbsensiScreen();
+    if (currentIndex == 1) return const RiwayatAbsensiScreen();
     return ProfileScreen();
   }
 
@@ -395,13 +537,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: getBody(),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        onTap: (i) => setState(() => currentIndex = i),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: "Riwayat"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: currentIndex,
+        onDestinationSelected: (i) {
+          setState(() => currentIndex = i);
+          if (i == 0) {
+            loadUser();
+            fetchToday();
+            fetchStats();
+          }
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: "Home",
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.history_outlined),
+            selectedIcon: Icon(Icons.history),
+            label: "Riwayat",
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: "Profil",
+          ),
         ],
       ),
     );

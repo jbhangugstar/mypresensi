@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mypresensi/api/location%20helper.dart';
-import '../api/absen/absen_service.dart';
 import '../model/attendance_model.dart';
-// import '../utils/location_helper.dart';
-import 'absen_page.dart';
+import '../api/absen/absen_service.dart';
 
 class RiwayatAbsensiScreen extends StatefulWidget {
   const RiwayatAbsensiScreen({super.key});
@@ -24,204 +22,271 @@ class _RiwayatAbsensiScreenState extends State<RiwayatAbsensiScreen> {
 
   void fetchHistory() async {
     try {
-      // final data = await AbsenService.getHistory();
-      // setState(() {
-      //   history = data;
-      //   isLoading = false;
-      // });
+      final data = await AbsenService.getHistory();
+      final List<Attendance> parsed =
+          data.map((json) => Attendance.fromJson(json)).toList();
+      setState(() {
+        history = parsed;
+        isLoading = false;
+      });
     } catch (e) {
-      setState(() => isLoading = false);
+      print("ERROR FETCH HISTORY: $e");
+      if (mounted) {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e")),
+        );
+      }
     }
   }
 
   // 🔥 DELETE
   void deleteAbsen(int id) async {
-    // await AbsensiService.deleteAbsen(id);
-    fetchHistory();
+    setState(() => isLoading = true);
+    try {
+      await AbsenService.deleteAbsen(id);
+      fetchHistory();
+    } catch (e) {
+      setState(() => isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Gagal menghapus: $e")),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.blue.shade600, Colors.blue.shade900],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.white))
-          : history.isEmpty
-          ? const Center(
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ================= HEADER =================
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
               child: Text(
-                'Belum ada riwayat absensi',
-                style: TextStyle(color: Colors.white),
+                "Riwayat Absensi",
+                style: tt.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: cs.onSurface,
+                ),
               ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: history.length,
-              itemBuilder: (_, index) {
-                final item = history[index];
+            ),
 
-                return GestureDetector(
-                  onTap: () {
-                    // 🔥 BUKA MAP DALAM APP
-                    // if (item.lat != null && item.lng != null) {
-                    //   Navigator.push(
-                    //     context,
-                    //     MaterialPageRoute(
-                    //       builder: (_) => AbsenPage(
-                    //         // lat: item.latitude!,
-                    //         // lng: item.longitude!,
-                    //         // type: "history",
-                    //       ),
-                    //     ),
-                    //   );
-                    // }
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.95),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // ================= HEADER =================
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            // Text(
-                            //   item.attendanceDate ?? '-',
-                            //   style: const TextStyle(
-                            //     fontSize: 16,
-                            //     fontWeight: FontWeight.bold,
-                            //   ),
-                            // ),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.map,
-                                  size: 18,
-                                  color: Colors.blue,
+            // ================= CONTENT =================
+            Expanded(
+              child: isLoading
+                  ? Center(child: CircularProgressIndicator(color: cs.primary))
+                  : history.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.history_toggle_off_rounded,
+                                size: 64,
+                                color: cs.onSurfaceVariant.withOpacity(0.4),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Belum ada riwayat absensi',
+                                style: tt.bodyLarge?.copyWith(
+                                  color: cs.onSurfaceVariant,
                                 ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: history.length,
+                          itemBuilder: (_, index) {
+                            final item = history[index];
 
-                                // 🔥 DELETE BUTTON
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.delete,
-                                    color: Colors.red,
-                                  ),
-                                  onPressed: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (_) => AlertDialog(
-                                        title: const Text("Hapus"),
-                                        content: const Text(
-                                          "Yakin hapus absen ini?",
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context),
-                                            child: const Text("Batal"),
-                                          ),
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.pop(context);
-
-                                              // ⚠️ sementara pakai index
-                                              deleteAbsen(index + 1);
-                                            },
-                                            child: const Text(
-                                              "Hapus",
-                                              style: TextStyle(
-                                                color: Colors.red,
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              color: cs.surfaceContainerLow,
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // ================= HEADER =================
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.calendar_today_rounded,
+                                              size: 16,
+                                              color: cs.primary,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              item.attendanceDate ?? '-',
+                                              style: tt.titleSmall?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color: cs.onSurface,
                                               ),
                                             ),
+                                          ],
+                                        ),
+                                        Row(
+                                          children: [
+                                            IconButton(
+                                              icon: Icon(
+                                                Icons.map_outlined,
+                                                size: 20,
+                                                color: cs.primary,
+                                              ),
+                                              onPressed: () {},
+                                              tooltip: "Lihat Map",
+                                            ),
+                                            IconButton(
+                                              icon: Icon(
+                                                Icons.delete_outline,
+                                                size: 20,
+                                                color: cs.error,
+                                              ),
+                                              tooltip: "Hapus",
+                                              onPressed: () {
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (_) => AlertDialog(
+                                                    title: const Text("Hapus Absen"),
+                                                    content: const Text(
+                                                      "Yakin hapus absen ini?",
+                                                    ),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () =>
+                                                            Navigator.pop(context),
+                                                        child: const Text("Batal"),
+                                                      ),
+                                                      FilledButton(
+                                                        onPressed: () {
+                                                          Navigator.pop(context);
+                                                          if (item.id != null) {
+                                                            deleteAbsen(item.id!);
+                                                          }
+                                                        },
+                                                        style: FilledButton.styleFrom(
+                                                          backgroundColor: cs.error,
+                                                        ),
+                                                        child: const Text("Hapus"),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+
+                                    const Divider(height: 20),
+
+                                    // ================= JAM =================
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _timeEntry(
+                                            "Masuk",
+                                            item.checkIn ?? '-',
+                                            Icons.login_rounded,
+                                            cs.primary,
+                                            cs,
+                                            tt,
                                           ),
-                                        ],
+                                        ),
+                                        Container(
+                                          width: 1,
+                                          height: 36,
+                                          color: cs.outlineVariant,
+                                        ),
+                                        Expanded(
+                                          child: _timeEntry(
+                                            "Keluar",
+                                            item.checkOut ?? '-',
+                                            Icons.logout_rounded,
+                                            cs.tertiary,
+                                            cs,
+                                            tt,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+
+                                    // ================= LOKASI =================
+                                    if (item.lat != null && item.lng != null) ...[
+                                      const SizedBox(height: 12),
+                                      FutureBuilder<String>(
+                                        future: LocationHelper.getAddress(
+                                          item.lat!,
+                                          item.lng!,
+                                        ),
+                                        builder: (context, snapshot) {
+                                          return Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Icon(
+                                                Icons.location_on_outlined,
+                                                size: 14,
+                                                color: cs.onSurfaceVariant,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Expanded(
+                                                child: Text(
+                                                  snapshot.data ?? "Memuat alamat...",
+                                                  style: tt.bodySmall?.copyWith(
+                                                    color: cs.onSurfaceVariant,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        },
                                       ),
-                                    );
-                                  },
+                                    ],
+                                  ],
                                 ),
-                              ],
-                            ),
-                          ],
+                              ),
+                            );
+                          },
                         ),
-
-                        const SizedBox(height: 12),
-
-                        // ================= JAM =================
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _timeBox(
-                              "Masuk",
-                              item.checkIn ?? '-',
-                              Colors.green,
-                            ),
-                            _timeBox(
-                              "Keluar",
-                              item.checkOut ?? '-',
-                              Colors.red,
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        // ================= LOKASI =================
-                        if (item.lat != null && item.lng != null)
-                          FutureBuilder<String>(
-                            future: LocationHelper.getAddress(
-                              item.lat!,
-                              item.lng!,
-                            ),
-                            builder: (context, snapshot) {
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    snapshot.data ?? "Mengambil alamat...",
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                  Text(
-                                    "${item.lat!.toStringAsFixed(6)}, ${item.lng!.toStringAsFixed(6)}",
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                      ],
-                    ),
-                  ),
-                );
-              },
             ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _timeBox(String title, String time, Color color) {
+  Widget _timeEntry(
+    String label,
+    String time,
+    IconData icon,
+    Color color,
+    ColorScheme cs,
+    TextTheme tt,
+  ) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Icon(icon, size: 18, color: color),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant),
+        ),
         Text(
           time,
-          style: TextStyle(
-            fontSize: 14,
+          style: tt.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
             color: color,
           ),

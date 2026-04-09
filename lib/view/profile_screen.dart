@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:mypresensi/api/auth/profile_user.dart';
 import '../model/profile_model.dart';
+import '../api/auth/login_user.dart';
+import 'login_screen.dart';
+import '../main.dart';
+import '../database/preference.dart';
 
 class ProfileScreen extends StatefulWidget {
   @override
@@ -64,140 +68,228 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ================= UI =================
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.blue.shade600, Colors.blue.shade900],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.white))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    const SizedBox(height: 20),
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
 
-                    // ================= FOTO =================
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundColor: Colors.white.withOpacity(0.2),
-                      backgroundImage: profile!.photo != null
-                          ? NetworkImage(profile!.photo!)
-                          : null,
-                      child: profile!.photo == null
-                          ? const Icon(
-                              Icons.person,
-                              size: 60,
-                              color: Colors.white,
-                            )
-                          : null,
-                    ),
+    return Scaffold(
+      body: SafeArea(
+        child: isLoading
+            ? Center(child: CircularProgressIndicator(color: cs.primary))
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 8),
 
-                    const SizedBox(height: 24),
-
-                    // ================= CARD FORM =================
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.95),
-                        borderRadius: BorderRadius.circular(12),
+                      // ================= HEADER =================
+                      Text(
+                        "Profil Saya",
+                        style: tt.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: cs.onSurface,
+                        ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Edit Profil",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
 
-                          // NAME
-                          TextFormField(
-                            controller: nameC,
-                            validator: (v) =>
-                                v!.isEmpty ? "Nama wajib diisi" : null,
-                            decoration: InputDecoration(
-                              labelText: "Nama",
-                              filled: true,
-                              fillColor: Colors.grey.shade100,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
+                      const SizedBox(height: 24),
 
-                          const SizedBox(height: 15),
+                      // ================= FOTO =================
+                      CircleAvatar(
+                        radius: 56,
+                        backgroundColor: cs.primaryContainer,
+                        backgroundImage: profile!.photo != null
+                            ? NetworkImage(profile!.photo!)
+                            : null,
+                        child: profile!.photo == null
+                            ? Icon(
+                                Icons.person,
+                                size: 56,
+                                color: cs.onPrimaryContainer,
+                              )
+                            : null,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        profile?.name ?? '',
+                        style: tt.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: cs.onSurface,
+                        ),
+                      ),
+                      Text(
+                        profile?.email ?? '',
+                        style: tt.bodyMedium?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
 
-                          // EMAIL
-                          TextFormField(
-                            controller: emailC,
-                            validator: (v) =>
-                                v!.isEmpty ? "Email wajib diisi" : null,
-                            decoration: InputDecoration(
-                              labelText: "Email",
-                              filled: true,
-                              fillColor: Colors.grey.shade100,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
+                      const SizedBox(height: 24),
 
-                          const SizedBox(height: 20),
-
-                          // UPDATE BUTTON
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: isUpdate ? null : updateProfile,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue.shade600,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
+                      // ================= DARK MODE =================
+                      Card(
+                        color: cs.surfaceContainerLow,
+                        child: ValueListenableBuilder<bool>(
+                          valueListenable: themeNotifier,
+                          builder: (context, isDark, child) {
+                            return SwitchListTile(
+                              title: Text(
+                                "Mode Gelap",
+                                style: tt.bodyLarge?.copyWith(
+                                  color: cs.onSurface,
                                 ),
                               ),
-                              child: isUpdate
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              Colors.white,
-                                            ),
-                                      ),
-                                    )
-                                  : const Text(
-                                      "Update Profile",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                      ),
+                              subtitle: Text(
+                                isDark ? "Aktif" : "Nonaktif",
+                                style: tt.bodySmall?.copyWith(
+                                  color: cs.onSurfaceVariant,
+                                ),
+                              ),
+                              secondary: Icon(
+                                isDark ? Icons.dark_mode : Icons.light_mode,
+                                color: cs.primary,
+                              ),
+                              value: isDark,
+                              onChanged: (val) {
+                                themeNotifier.value = val;
+                                PreferenceHandler().storingTheme(val);
+                              },
+                            );
+                          },
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // ================= CARD FORM =================
+                      Card(
+                        color: cs.surfaceContainerLow,
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Edit Profil",
+                                style: tt.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: cs.onSurface,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // NAME
+                              TextFormField(
+                                controller: nameC,
+                                validator: (v) =>
+                                    v!.isEmpty ? "Nama wajib diisi" : null,
+                                decoration: InputDecoration(
+                                  labelText: "Nama",
+                                  prefixIcon: const Icon(Icons.person_outlined),
+                                  fillColor: cs.surfaceContainerHighest,
+                                ),
+                              ),
+
+                              const SizedBox(height: 14),
+
+                              // EMAIL
+                              TextFormField(
+                                controller: emailC,
+                                validator: (v) =>
+                                    v!.isEmpty ? "Email wajib diisi" : null,
+                                decoration: InputDecoration(
+                                  labelText: "Email",
+                                  prefixIcon: const Icon(Icons.email_outlined),
+                                  fillColor: cs.surfaceContainerHighest,
+                                ),
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              // UPDATE BUTTON
+                              SizedBox(
+                                width: double.infinity,
+                                child: FilledButton.icon(
+                                  onPressed: isUpdate ? null : updateProfile,
+                                  icon: isUpdate
+                                      ? const SizedBox(
+                                          height: 18,
+                                          width: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Icon(Icons.save_outlined),
+                                  label: const Text("Simpan Perubahan"),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // ================= LOGOUT =================
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (_) => AlertDialog(
+                                title: const Text("Keluar"),
+                                content: const Text("Yakin ingin logout?"),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, false),
+                                    child: const Text("Batal"),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () => Navigator.pop(context, true),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: cs.error,
                                     ),
+                                    child: const Text("Logout"),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirm == true) {
+                              await LoginUser.logout();
+                              if (context.mounted) {
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const LoginScreen(),
+                                  ),
+                                  (route) => false,
+                                );
+                              }
+                            }
+                          },
+                          icon: Icon(Icons.logout, color: cs.error),
+                          label: Text(
+                            "Logout",
+                            style: TextStyle(color: cs.error),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: cs.error),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
+
+                      const SizedBox(height: 20),
+                    ],
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
 }

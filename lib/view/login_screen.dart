@@ -37,9 +37,9 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     if (!email.contains("@")) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Format email tidak valid")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Format email tidak valid")),
+      );
       return;
     }
 
@@ -59,189 +59,180 @@ class _LoginScreenState extends State<LoginScreen> {
     if (result != null) {
       context.pushAndRemoveAll(DashboardScreen());
     } else {
-      // ❌ gagal
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Login gagal")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Login gagal")),
+      );
     }
-  }
-
-  InputDecoration inputStyle({required String hint, Widget? suffixIcon}) {
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: Colors.white,
-      suffixIcon: suffixIcon,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
     return Scaffold(
-      backgroundColor: Colors.grey[300],
       body: Container(
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.grey.shade900, Colors.grey.shade500],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            colors: [cs.primary, cs.primaryContainer],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // ================= LOGO DI ATAS BOX =================
+                // ================= LOGO =================
                 Image.asset(
                   "assets/images/logo _MyPresensi.png",
-                  height: 200,
+                  height: 160,
                   fit: BoxFit.contain,
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: 16),
 
-                // ================= BOX LOGIN =================
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.75),
-                    borderRadius: BorderRadius.circular(25),
+                // ================= CARD LOGIN =================
+                Card(
+                  color: cs.surface,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Text(
-                        "Welcome Back",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        "Login To Your Account",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                      const SizedBox(height: 25),
-
-                      // ================= EMAIL =================
-                      TextField(
-                        controller: emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: inputStyle(hint: "Email"),
-                      ),
-                      const SizedBox(height: 15),
-
-                      // ================= PASSWORD =================
-                      TextField(
-                        controller: passwordController,
-                        obscureText: isPasswordHidden,
-                        decoration: inputStyle(
-                          hint: "Kata Sandi",
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              isPasswordHidden
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                              color: Colors.grey,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                isPasswordHidden = !isPasswordHidden;
-                              });
-                            },
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          "Selamat Datang",
+                          textAlign: TextAlign.center,
+                          style: tt.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: cs.onSurface,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 6),
+                        Text(
+                          "Masuk ke akun Anda",
+                          textAlign: TextAlign.center,
+                          style: tt.bodyMedium?.copyWith(
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 28),
 
-                      // ================= BUTTON LOGIN =================
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
+                        // ================= EMAIL =================
+                        TextField(
+                          controller: emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: InputDecoration(
+                            labelText: "Email",
+                            prefixIcon: const Icon(Icons.email_outlined),
+                            fillColor: cs.surfaceContainerHighest,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // ================= PASSWORD =================
+                        TextField(
+                          controller: passwordController,
+                          obscureText: isPasswordHidden,
+                          decoration: InputDecoration(
+                            labelText: "Kata Sandi",
+                            prefixIcon: const Icon(Icons.lock_outlined),
+                            fillColor: cs.surfaceContainerHighest,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                isPasswordHidden
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  isPasswordHidden = !isPasswordHidden;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // ================= BUTTON LOGIN =================
+                        FilledButton(
                           onPressed: isLoading ? null : handleLogin,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                          ),
                           child: isLoading
                               ? const SizedBox(
                                   width: 22,
                                   height: 22,
                                   child: CircularProgressIndicator(
-                                    color: Colors.white,
                                     strokeWidth: 2.5,
                                   ),
                                 )
                               : const Text(
-                                  "Log In",
+                                  "Masuk",
                                   style: TextStyle(fontSize: 16),
                                 ),
                         ),
-                      ),
 
-                      const SizedBox(height: 15),
+                        const SizedBox(height: 16),
 
-                      // ================= REGISTER =================
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            "Belum punya akun? ",
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const RegisterScreen(),
+                        // ================= REGISTER =================
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Belum punya akun? ",
+                              style: tt.bodyMedium?.copyWith(
+                                color: cs.onSurfaceVariant,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const RegisterScreen(),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                "Daftar",
+                                style: tt.bodyMedium?.copyWith(
+                                  color: cs.primary,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                              );
-                            },
-                            child: const Text(
-                              "Daftar",
-                              style: TextStyle(
-                                color: Colors.green,
-                                fontWeight: FontWeight.bold,
                               ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        // ================= FORGOT PASSWORD =================
+                        TextButton(
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  "Fitur lupa password belum tersedia",
+                                ),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            "Lupa Kata Sandi?",
+                            style: tt.bodySmall?.copyWith(
+                              color: cs.onSurfaceVariant,
                             ),
                           ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      // ================= FORGOT PASSWORD =================
-                      TextButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                "Fitur lupa password belum tersedia",
-                              ),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          "Lupa Kata Sandi?",
-                          style: TextStyle(color: Colors.white70),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],

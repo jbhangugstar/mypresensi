@@ -51,21 +51,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   void loadData() async {
     try {
-      print("========== LOAD TRAINING DEBUG ==========");
-      print("Mulai ambil data training...");
-
       final t = await RegisterApi.getTrainings();
-
-      print("Jumlah training: ${t.length}");
-      print("=========================================");
-
       setState(() {
         trainings = t;
         isLoading = false;
       });
     } catch (e) {
-      print("LOAD TRAINING ERROR: $e");
-
       setState(() {
         errorMessage = "Error: $e";
         isLoading = false;
@@ -81,29 +72,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      print("========== LOAD BATCH DEBUG ==========");
-      print("Training ID dipilih: $trainingId");
-      print("Ambil batch berdasarkan training...");
-
       final b = await RegisterApi.getBatchesByTraining(trainingId);
-
-      print("Jumlah batch: ${b.length}");
-      print("======================================");
-
       setState(() {
         batches = b;
         isLoadingBatch = false;
       });
     } catch (e) {
-      print("LOAD BATCH ERROR: $e");
-
       setState(() {
         isLoadingBatch = false;
       });
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Gagal load batch: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Gagal load batch: $e")),
+      );
     }
   }
 
@@ -111,9 +91,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     if (selectedTraining == null || selectedBatch == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Pilih training & batch")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Pilih training & batch")),
+      );
       return;
     }
 
@@ -128,26 +108,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       batchId: selectedBatch!.id,
     );
 
-    print("========== REGISTER SCREEN DEBUG ==========");
-    print("Nama         : ${nameC.text.trim()}");
-    print("Email        : ${emailC.text.trim()}");
-    print("Password     : ${passwordC.text.trim()}");
-    print("Gender       : $selectedGender");
-    print("Training ID  : ${selectedTraining!.id}");
-    print("Training     : ${selectedTraining!.title}");
-    print("Batch ID     : ${selectedBatch!.id}");
-    print("Batch        : ${selectedBatch!.name}");
-    print("JSON BODY    : ${model.toJson()}");
-    print("===========================================");
-
     final success = await RegisterApi.register(model);
 
     setState(() => isSubmit = false);
 
     if (success) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Register berhasil")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Register berhasil")),
+      );
 
       _formKey.currentState!.reset();
       nameC.clear();
@@ -166,7 +134,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Register gagal, cek console debug"),
-          backgroundColor: Colors.red,
         ),
       );
     }
@@ -174,192 +141,176 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
     return Scaffold(
       body: Container(
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.grey.shade900, Colors.grey.shade500],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            colors: [cs.primary, cs.primaryContainer],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
         child: Center(
           child: isLoading
-              ? const CircularProgressIndicator(color: Colors.white)
+              ? CircularProgressIndicator(color: cs.onPrimary)
               : errorMessage.isNotEmpty
-              ? Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Text(
-                    errorMessage,
-                    style: const TextStyle(color: Colors.red),
-                    textAlign: TextAlign.center,
-                  ),
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // ================= LOGO =================
-                      Image.asset(
-                        "assets/images/logo _MyPresensi.png",
-                        height: 100,
-                        fit: BoxFit.contain,
+                  ? Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Text(
+                        errorMessage,
+                        style: tt.bodyLarge?.copyWith(color: cs.error),
+                        textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 0),
+                    )
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // ================= LOGO =================
+                          Image.asset(
+                            "assets/images/logo _MyPresensi.png",
+                            height: 100,
+                            fit: BoxFit.contain,
+                          ),
+                          const SizedBox(height: 8),
 
-                      // ================= BOX REGISTER =================
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.75),
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              const Text(
-                                "Register Account",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-
-                              buildInput(nameC, "Nama"),
-                              const SizedBox(height: 12),
-
-                              buildInput(
-                                emailC,
-                                "Email",
-                                keyboardType: TextInputType.emailAddress,
-                              ),
-                              const SizedBox(height: 12),
-
-                              buildInput(
-                                passwordC,
-                                "Kata Sandi",
-                                isPassword: true,
-                              ),
-                              const SizedBox(height: 12),
-
-                              buildDropdownGender(),
-                              const SizedBox(height: 12),
-
-                              buildDropdownTraining(),
-                              const SizedBox(height: 12),
-
-                              buildDropdownBatch(),
-                              const SizedBox(height: 24),
-
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                ),
-                                onPressed: isSubmit ? null : submit,
-                                child: isSubmit
-                                    ? const SizedBox(
-                                        width: 22,
-                                        height: 22,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2.5,
-                                        ),
-                                      )
-                                    : const Text(
-                                        "Daftar",
-                                        style: TextStyle(fontSize: 16),
-                                      ),
-                              ),
-
-                              const SizedBox(height: 0),
-
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Text(
-                                    "Sudah punya akun? ",
-                                    style: TextStyle(color: Colors.white70),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const LoginScreen(),
-                                        ),
-                                      );
-                                    },
-                                    child: const Text(
-                                      "Login",
-                                      style: TextStyle(
-                                        color: Colors.green,
+                          // ================= CARD REGISTER =================
+                          Card(
+                            color: cs.surface,
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Form(
+                                key: _formKey,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    Text(
+                                      "Buat Akun",
+                                      textAlign: TextAlign.center,
+                                      style: tt.headlineSmall?.copyWith(
                                         fontWeight: FontWeight.bold,
+                                        color: cs.onSurface,
                                       ),
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 24),
+
+                                    _buildInput(nameC, "Nama", cs, prefixIcon: Icons.person_outlined),
+                                    const SizedBox(height: 14),
+
+                                    _buildInput(emailC, "Email", cs,
+                                        keyboardType: TextInputType.emailAddress,
+                                        prefixIcon: Icons.email_outlined),
+                                    const SizedBox(height: 14),
+
+                                    _buildInput(passwordC, "Kata Sandi", cs,
+                                        isPassword: true,
+                                        prefixIcon: Icons.lock_outlined),
+                                    const SizedBox(height: 14),
+
+                                    _buildDropdownGender(cs),
+                                    const SizedBox(height: 14),
+
+                                    _buildDropdownTraining(cs),
+                                    const SizedBox(height: 14),
+
+                                    _buildDropdownBatch(cs),
+                                    const SizedBox(height: 24),
+
+                                    FilledButton(
+                                      onPressed: isSubmit ? null : submit,
+                                      child: isSubmit
+                                          ? const SizedBox(
+                                              width: 22,
+                                              height: 22,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2.5,
+                                              ),
+                                            )
+                                          : const Text(
+                                              "Daftar",
+                                              style: TextStyle(fontSize: 16),
+                                            ),
+                                    ),
+
+                                    const SizedBox(height: 12),
+
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          "Sudah punya akun? ",
+                                          style: tt.bodyMedium?.copyWith(
+                                            color: cs.onSurfaceVariant,
+                                          ),
+                                        ),
+                                        GestureDetector(
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => const LoginScreen(),
+                                              ),
+                                            );
+                                          },
+                                          child: Text(
+                                            "Login",
+                                            style: tt.bodyMedium?.copyWith(
+                                              color: cs.primary,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
         ),
       ),
     );
   }
 
-  Widget buildInput(
+  Widget _buildInput(
     TextEditingController c,
-    String hint, {
+    String hint,
+    ColorScheme cs, {
     bool isPassword = false,
     TextInputType keyboardType = TextInputType.text,
+    IconData? prefixIcon,
   }) {
     return TextFormField(
       controller: c,
       keyboardType: keyboardType,
       obscureText: isPassword ? isPasswordHidden : false,
       validator: (v) {
-        if (v == null || v.trim().isEmpty) {
-          return "$hint wajib diisi";
-        }
-
-        if (hint == "Email" && !v.contains("@")) {
-          return "Email tidak valid";
-        }
-
-        if (hint == "Kata Sandi" && v.length < 6) {
-          return "Password minimal 6 karakter";
-        }
-
+        if (v == null || v.trim().isEmpty) return "$hint wajib diisi";
+        if (hint == "Email" && !v.contains("@")) return "Email tidak valid";
+        if (hint == "Kata Sandi" && v.length < 6) return "Password minimal 6 karakter";
         return null;
       },
       decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.white,
-        hintText: hint,
+        labelText: hint,
+        fillColor: cs.surfaceContainerHighest,
+        prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null,
         suffixIcon: isPassword
             ? IconButton(
                 icon: Icon(
-                  isPasswordHidden ? Icons.visibility_off : Icons.visibility,
-                  color: Colors.grey,
+                  isPasswordHidden ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                 ),
                 onPressed: () {
                   setState(() {
@@ -368,18 +319,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 },
               )
             : null,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
       ),
     );
   }
 
-  Widget buildDropdownGender() {
+  Widget _buildDropdownGender(ColorScheme cs) {
     return DropdownButtonFormField<String>(
       value: selectedGender,
-      decoration: inputStyle(),
+      decoration: InputDecoration(
+        labelText: "Jenis Kelamin",
+        fillColor: cs.surfaceContainerHighest,
+        prefixIcon: const Icon(Icons.wc_outlined),
+      ),
       isExpanded: true,
       items: const [
         DropdownMenuItem(value: 'L', child: Text("Laki-laki")),
@@ -392,12 +343,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget buildDropdownTraining() {
+  Widget _buildDropdownTraining(ColorScheme cs) {
     return DropdownButtonFormField<TrainingModel>(
       value: selectedTraining,
       hint: const Text("Pilih Training"),
       isExpanded: true,
-      decoration: inputStyle(),
+      decoration: InputDecoration(
+        labelText: "Training",
+        fillColor: cs.surfaceContainerHighest,
+        prefixIcon: const Icon(Icons.school_outlined),
+      ),
       items: trainings.map((e) {
         return DropdownMenuItem(
           value: e,
@@ -406,27 +361,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }).toList(),
       onChanged: (val) async {
         if (val == null) return;
-
-        print("Training dipilih: ${val.title} (ID: ${val.id})");
-
         setState(() {
           selectedTraining = val;
         });
-
         await loadBatch(val.id);
       },
       validator: (value) => value == null ? "Training wajib dipilih" : null,
     );
   }
 
-  Widget buildDropdownBatch() {
+  Widget _buildDropdownBatch(ColorScheme cs) {
     return DropdownButtonFormField<BatchModel>(
       value: selectedBatch,
       hint: isLoadingBatch
           ? const Text("Loading batch...")
           : const Text("Pilih Batch"),
       isExpanded: true,
-      decoration: inputStyle(),
+      decoration: InputDecoration(
+        labelText: "Batch",
+        fillColor: cs.surfaceContainerHighest,
+        prefixIcon: const Icon(Icons.group_outlined),
+      ),
       items: batches.map((e) {
         return DropdownMenuItem(
           value: e,
@@ -437,25 +392,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ? null
           : (val) {
               if (val == null) return;
-
-              print("Batch dipilih: ${val.name} (ID: ${val.id})");
-
               setState(() {
                 selectedBatch = val;
               });
             },
       validator: (value) => value == null ? "Batch wajib dipilih" : null,
-    );
-  }
-
-  InputDecoration inputStyle() {
-    return InputDecoration(
-      filled: true,
-      fillColor: Colors.white,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
     );
   }
 }

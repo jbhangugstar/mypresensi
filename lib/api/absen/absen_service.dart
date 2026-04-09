@@ -16,7 +16,7 @@ class AbsenService {
     String status = "masuk", // default masuk
     String? alasanIzin,
   }) async {
-    final token = PreferenceHandler.getToken();
+    final token = await PreferenceHandler.getToken();
 
     final url = Uri.parse('$baseUrl/absen/check-in');
     final now = DateTime.now();
@@ -34,7 +34,7 @@ class AbsenService {
     log(body.toString());
     final response = await http.post(
       url,
-      headers: {"Accept": "application/json", 'Authorization': '$token'},
+      headers: {"Accept": "application/json", 'Authorization': 'Bearer $token'},
       body: body,
     );
     log(response.request.toString());
@@ -55,7 +55,7 @@ class AbsenService {
     required double longitude,
     required String address,
   }) async {
-    final token = PreferenceHandler.getToken();
+    final token = await PreferenceHandler.getToken();
 
     final url = Uri.parse('$baseUrl/absen/check-out');
 
@@ -63,7 +63,7 @@ class AbsenService {
 
     final response = await http.post(
       url,
-      headers: {"Accept": "application/json", 'Authorization': '$token'},
+      headers: {"Accept": "application/json", 'Authorization': 'Bearer $token'},
 
       body: {
         "attendance_date": DateFormat('yyyy-MM-dd').format(now),
@@ -85,7 +85,7 @@ class AbsenService {
   }
 
   static Future<Map<String, dynamic>> getToday(String date) async {
-    final token = PreferenceHandler.getToken();
+    final token = await PreferenceHandler.getToken();
 
     final url = Uri.parse('$baseUrl/absen/today?attendance_date=$date');
 
@@ -104,7 +104,7 @@ class AbsenService {
   }
 
   static Future<Map<String, dynamic>> getStats(String start, String end) async {
-    final token = PreferenceHandler.getToken();
+    final token = await PreferenceHandler.getToken();
 
     final url = Uri.parse('$baseUrl/absen/stats?start=$start&end=$end');
 
@@ -119,6 +119,66 @@ class AbsenService {
       return data['data'];
     } else {
       throw Exception(data['message']);
+    }
+  }
+
+  static Future<List<dynamic>> getHistory() async {
+    final token = await PreferenceHandler.getToken();
+
+    final url = Uri.parse('$baseUrl/absen/history');
+
+    log("========== GET HISTORY DEBUG ==========");
+    log("URL: $url");
+    log("TOKEN: $token");
+
+    final response = await http.get(
+      url,
+      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
+    );
+
+    log("STATUS: ${response.statusCode}");
+    log("BODY: ${response.body}");
+    log("=======================================");
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      // Handle berbagai kemungkinan format respons API
+      if (data is List) {
+        return data;
+      } else if (data is Map<String, dynamic>) {
+        if (data.containsKey('data')) {
+          final inner = data['data'];
+          if (inner is List) {
+            return inner;
+          } else if (inner is Map && inner.containsKey('data')) {
+            // Paginated: { data: { data: [...] } }
+            return inner['data'] ?? [];
+          }
+        }
+        return [];
+      }
+      return [];
+    } else {
+      throw Exception(data['message'] ?? 'Gagal mengambil riwayat');
+    }
+  }
+
+  static Future<bool> deleteAbsen(int id) async {
+    final token = await PreferenceHandler.getToken();
+
+    final url = Uri.parse('$baseUrl/absen/$id');
+
+    final response = await http.delete(
+      url,
+      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      final data = jsonDecode(response.body);
+      throw Exception(data['message'] ?? 'Gagal menghapus');
     }
   }
 }
